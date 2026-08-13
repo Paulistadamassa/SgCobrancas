@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SgCobrancas.ApiService/SgCobrancas.ApiService.csproj" />
+  <Project Path="SgCobrancas.Web/SgCobrancas.Web.csproj" />
+</Solution>

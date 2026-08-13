@@ -1,0 +1,243 @@
+﻿@page "/clientes"
+@using SgCobrancas.Web.DTOs
+@using SgCobrancas.Web.Services
+@inject IApiService ApiService
+
+<PageTitle>Clientes - SgCobranças</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestão de Clientes</h2>
+        @if (!showForm)
+        {
+            <button class="btn btn-primary" @onclick="AbrirFormNovoCliente">
+                <i class="bi bi-person-plus-fill me-1"></i> Novo Cliente
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @if (showForm)
+    {
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">@(clienteEdicao.Id == 0 ? "Novo Cliente" : "Editar Cliente")</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="clienteEdicao" OnValidSubmit="SalvarCliente">
+                    <DataAnnotationsValidator />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nome *</label>
+                            <InputText class="form-control" @bind-Value="clienteEdicao.Name" placeholder="Ex: João da Silva" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">CPF/CNPJ *</label>
+                            <InputText class="form-control" @bind-Value="clienteEdicao.Document" placeholder="000.000.000-00" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">E-mail *</label>
+                            <InputText class="form-control" @bind-Value="clienteEdicao.Email" placeholder="cliente@email.com" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Telefone</label>
+                            <InputText class="form-control" @bind-Value="clienteEdicao.Phone" placeholder="(32) 99999-9999" />
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelarForm" disabled="@isSaving">Cancelar</button>
+                        <button type="submit" class="btn btn-success" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span>Salvando...</span>
+                            }
+                            else
+                            {
+                                <span>Salvar</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    }
+    else if (clientes == null || !clientes.Any())
+    {
+        <div class="alert alert-info text-center" role="alert">
+            Nenhum cliente cadastrado até o momento.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>CPF/CNPJ</th>
+                        <th>E-mail</th>
+                        <th>Telefone</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in clientes)
+                    {
+                        <tr>
+                            <td>@c.Id</td>
+                            <td class="fw-bold">@c.Name</td>
+                            <td>@c.Document</td>
+                            <td>@c.Email</td>
+                            <td>@(string.IsNullOrWhiteSpace(c.Phone) ? "-" : c.Phone)</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditarCliente(c)" title="Editar">
+                                    Editar
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletarCliente(c.Id)" title="Excluir">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<CustomerDTO> clientes = new();
+    private CustomerDTO clienteEdicao = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool showForm = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarClientes();
+    }
+
+    private async Task CarregarClientes()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            clientes = await ApiService.GetCustomersAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar clientes: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void AbrirFormNovoCliente()
+    {
+        clienteEdicao = new CustomerDTO();
+        showForm = true;
+    }
+
+    private void EditarCliente(CustomerDTO cliente)
+    {
+        clienteEdicao = new CustomerDTO
+        {
+            Id = cliente.Id,
+            Name = cliente.Name,
+            Document = cliente.Document,
+            Email = cliente.Email,
+            Phone = cliente.Phone
+        };
+        showForm = true;
+    }
+
+    private async Task SalvarCliente()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            if (clienteEdicao.Id == 0)
+            {
+                var resultado = await ApiService.CreateCustomerAsync(clienteEdicao);
+                if (resultado == null)
+                {
+                    errorMessage = "Não foi possível cadastrar o cliente.";
+                    return;
+                }
+            }
+            else
+            {
+                var resultado = await ApiService.UpdateCustomerAsync(clienteEdicao.Id, clienteEdicao);
+                if (resultado == null)
+                {
+                    errorMessage = "Não foi possível atualizar o cliente.";
+                    return;
+                }
+            }
+
+            showForm = false;
+            await CarregarClientes();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao salvar: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeletarCliente(int id)
+    {
+        errorMessage = null;
+        try
+        {
+            var sucesso = await ApiService.DeleteCustomerAsync(id);
+            if (sucesso == true)
+            {
+                await CarregarClientes();
+            }
+            else
+            {
+                errorMessage = "Falha ao excluir o cliente na API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao excluir cliente: {ex.Message}";
+        }
+    }
+
+    private void CancelarForm()
+    {
+        showForm = false;
+        clienteEdicao = new CustomerDTO();
+    }
+}

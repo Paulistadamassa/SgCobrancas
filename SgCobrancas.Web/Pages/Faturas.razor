@@ -1,0 +1,300 @@
+﻿@page "/faturas"
+@using SgCobrancas.Web.DTOs
+@using SgCobrancas.Web.Models
+@using SgCobrancas.Web.Services
+@inject IApiService ApiService
+
+<PageTitle>Faturas - SgCobranças</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestão de Faturas</h2>
+        @if (!showForm)
+        {
+            <button class="btn btn-primary" @onclick="AbrirFormNovaFatura">
+                <i class="bi bi-plus-circle-fill me-1"></i> Nova Fatura
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @if (showForm)
+    {
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">@(faturaEdicao.Id == 0 ? "Nova Fatura" : "Editar Fatura")</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="faturaEdicao" OnValidSubmit="() => SalvarFatura()">
+                    <DataAnnotationsValidator />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Cliente *</label>
+                            <InputSelect class="form-select" @bind-Value="faturaEdicao.CustomerId">
+                                <option value="0">Selecione um cliente...</option>
+                                @foreach (var c in clientes)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Valor (R$) *</label>
+                            <InputNumber class="form-control" @bind-Value="faturaEdicao.Valor" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Vencimento *</label>
+                            <InputDate class="form-control" @bind-Value="faturaEdicao.DataVencimento" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <InputSelect class="form-select" @bind-Value="faturaEdicao.Status">
+                                @foreach (var status in Enum.GetValues<InvoiceStatus>())
+                                {
+                                    <option value="@status">@status</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Recorrência</label>
+                            <input class="form-control" @bind="faturaEdicao.Recorrencia" placeholder="Ex:1,2,3" />
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelarForm" disabled="@isSaving">Cancelar</button>
+                        <button type="submit" class="btn btn-success" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span>Salvando...</span>
+                            }
+                            else
+                            {
+                                <span>Salvar</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    }
+    else if (faturas == null || !faturas.Any())
+    {
+        <div class="alert alert-info text-center" role="alert">
+            Nenhuma fatura cadastrada até o momento.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Valor</th>
+                        <th>Vencimento</th>
+                        <th>Status</th>
+                        <th>Recorrência</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in faturas)
+                    {
+                        <tr>
+                            <td>@f.Id</td>
+                            <td class="fw-bold">@(string.IsNullOrEmpty(f.CustomerName) ? f.CustomerId.ToString() : f.CustomerName)</td>
+                            <td>@f.Valor.ToString("C")</td>
+                            <td>@f.DataVencimento.ToShortDateString()</td>
+                            <td>
+                                <span class="badge @ObterBadgeStatus(f.Status)">
+                                    @f.Status
+                                </span>
+                            </td>
+                            <td>@f.Recorrencia</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditarFatura(f)" title="Editar">
+                                    Editar
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletarFatura(f.Id)" title="Excluir">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<InvoiceDTO> faturas = new();
+    private List<CustomerDTO> clientes = new();
+    private InvoiceDTO faturaEdicao = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool showForm = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDados();
+    }
+
+    private async Task CarregarDados()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var faturasTask = ApiService.GetInvoicesAsync();
+            var clientesTask = ApiService.GetCustomersAsync();
+
+            await Task.WhenAll(faturasTask, clientesTask);
+
+            faturas = await faturasTask ?? new List<InvoiceDTO>();
+            clientes = await clientesTask ?? new List<CustomerDTO>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar dados: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void AbrirFormNovaFatura()
+    {
+        faturaEdicao = new InvoiceDTO
+        {
+            DataVencimento = DateTime.Today,
+            Status = InvoiceStatus.Pending
+        };
+        showForm = true;
+    }
+
+    private void EditarFatura(InvoiceDTO fatura)
+    {
+        faturaEdicao = new InvoiceDTO
+        {
+            Id = fatura.Id,
+            Valor = fatura.Valor,
+            DataVencimento = fatura.DataVencimento,
+            Status = fatura.Status,
+            Recorrencia = fatura.Recorrencia,
+            CustomerId = fatura.CustomerId,
+            CustomerName = fatura.CustomerName,
+            DataCriacao = fatura.DataCriacao,
+            DataPagamento = fatura.DataPagamento
+        };
+        showForm = true;
+    }
+
+    private async Task SalvarFatura()
+    {
+        if (faturaEdicao.CustomerId == 0)
+        {
+            errorMessage = "Selecione um cliente válido.";
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            if (faturaEdicao.Id == 0)
+            {
+                var resultado = await ApiService.CreateInvoiceAsync(faturaEdicao);
+                if (resultado == null)
+                {
+                    errorMessage = "Não foi possível cadastrar a fatura.";
+                    return;
+                }
+            }
+            else
+            {
+                var resultado = await ApiService.UpdateInvoiceAsync(faturaEdicao.Id, faturaEdicao);
+                if (resultado == null)
+                {
+                    errorMessage = "Não foi possível atualizar a fatura.";
+                    return;
+                }
+            }
+
+            showForm = false;
+            await CarregarDados();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao salvar fatura: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeletarFatura(int id)
+    {
+        errorMessage = null;
+
+        try
+        {
+            var sucesso = await ApiService.DeleteInvoiceAsync(id);
+            if (sucesso == true)
+            {
+                await CarregarDados();
+            }
+            else
+            {
+                errorMessage = "Falha ao excluir a fatura na API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao excluir fatura: {ex.Message}";
+        }
+    }
+
+    private void CancelarForm()
+    {
+        showForm = false;
+        faturaEdicao = new InvoiceDTO();
+    }
+
+    private string ObterBadgeStatus(InvoiceStatus status) => status switch
+    {
+        InvoiceStatus.Paid => "bg-success",
+        InvoiceStatus.Pending => "bg-warning text-dark",
+        InvoiceStatus.Canceled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
