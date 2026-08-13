@@ -9,4 +9,5 @@ public interface ICustomerService
     Task<CustomerDTO> CreateAsync(CustomerDTO request);
     Task<CustomerDTO?> UpdateAsync(int id, CustomerDTO request);
     Task<bool> DeleteAsync(int id);
+    Task<bool> EnviarEmailCobrando(int id, string assunto, string corpo);
 }

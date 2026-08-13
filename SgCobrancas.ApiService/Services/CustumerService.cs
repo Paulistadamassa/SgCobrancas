@@ -10,11 +10,13 @@ public class CustomerService : ICustomerService
 {
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IEmailService _email;
 
-    public CustomerService(AppDbContext context, IMapper mapper)
+    public CustomerService(AppDbContext context, IMapper mapper, IEmailService email)
     {
         _context = context;
         _mapper = mapper;
+        _email = email;
     }
 
     public async Task<IEnumerable<CustomerDTO>> GetAllAsync()
@@ -60,6 +62,19 @@ public class CustomerService : ICustomerService
 
         _context.Customers.Remove(customer);
         await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> EnviarEmailCobrando(int id, string assunto, string corpo)
+    {
+        var customer = await _context.Customers.FindAsync(id);
+        if (customer == null) return false;
+        
+        if (string.IsNullOrEmpty(assunto) || string.IsNullOrEmpty(corpo)) { return false; }
+
+        var emailEnviou = await _email.EnviarMensagemAsync(customer.Email, assunto, corpo);
+        if (!emailEnviou) { return false;  }
+
         return true;
     }
 }

@@ -64,4 +64,16 @@ public class CustomersController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPost("/enviar-email")]
+    public async Task<ActionResult<bool>> EnviarEmail(int id, string assunto, string corpo)
+    {
+        var success = await _customerService.EnviarEmailCobrando(id, assunto, corpo);
+        if (!success)
+        {
+            return NotFound("Cliente não encontrado ou erro ao enviar email.");
+        }
+
+        return Ok(true);
+    }
 }
