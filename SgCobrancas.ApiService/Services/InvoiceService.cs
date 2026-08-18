@@ -66,7 +66,7 @@ public class InvoiceService : IInvoiceService
             DataVencimento = request.DataVencimento,
             CustomerId = request.CustomerId,
             Recorrencia = request.Recorrencia,
-            Status = InvoiceStatus.Pending
+            Status = InvoiceStatus.Pendente
         };
 
         _context.Invoices.Add(invoice);

@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SgCobrancas.ApiService.DTOs;
 using SgCobrancas.ApiService.Services;
 
 namespace SgCobrancas.ApiService.Controllers;
 
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class CustomersController : ControllerBase

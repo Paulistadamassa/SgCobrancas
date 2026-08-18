@@ -69,8 +69,21 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Recorrência</label>
-                            <input class="form-control" @bind="faturaEdicao.Recorrencia" placeholder="Ex:1,2,3" />
+                            <InputSelect class="form-select" @bind-Value="faturaEdicao.Recorrencia">
+                                <option value="">Selecione...</option>
+                                <option value="Unica">Única</option>
+                                <option value="Mensal">Mensal</option>
+                                <option value="Anual">Anual</option>
+                            </InputSelect>
                         </div>
+
+                        @if (faturaEdicao.Recorrencia == RecurrenceType.Mensal)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label">Quantidade de Meses *</label>
+                                <InputNumber class="form-control" @bind-Value="faturaEdicao.Meses" min="1" placeholder="Ex: 12" />
+                            </div>
+                        }
                     </div>
 
                     <div class="mt-4 d-flex justify-content-end gap-2">
@@ -139,6 +152,20 @@
                                 <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditarFatura(f)" title="Editar">
                                     Editar
                                 </button>
+                                <button class="btn btn-sm btn-outline-success me-1"
+                                        @onclick="() => EnviarEmail(f.Id)"
+                                        disabled="@(enviandoEmailId == f.Id)"
+                                        title="Enviar por e-mail">
+                                    @if (enviandoEmailId == f.Id)
+                                    {
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-envelope-fill"></i>
+                                    }
+                                    Enviar Email
+                                </button>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletarFatura(f.Id)" title="Excluir">
                                     Excluir
                                 </button>
@@ -195,7 +222,7 @@
         faturaEdicao = new InvoiceDTO
         {
             DataVencimento = DateTime.Today,
-            Status = InvoiceStatus.Pending
+            Status = InvoiceStatus.Pendente
         };
         showForm = true;
     }
@@ -218,16 +245,18 @@
     }
 
     private async Task SalvarFatura()
+{
+    if (faturaEdicao.CustomerId == 0)
     {
-        if (faturaEdicao.CustomerId == 0)
-        {
-            errorMessage = "Selecione um cliente válido.";
-            return;
-        }
+        errorMessage = "Selecione um cliente válido.";
+        return;
+    }
 
-        isSaving = true;
-        errorMessage = null;
-
+    if (faturaEdicao.Recorrencia == RecurrenceType.Mensal && (faturaEdicao.Meses is null || faturaEdicao.Meses <= 0))
+    {
+        errorMessage = "Informe a quantidade de meses para recorrência mensal.";
+        return;
+    }
         try
         {
             if (faturaEdicao.Id == 0)
@@ -292,9 +321,33 @@
 
     private string ObterBadgeStatus(InvoiceStatus status) => status switch
     {
-        InvoiceStatus.Paid => "bg-success",
-        InvoiceStatus.Pending => "bg-warning text-dark",
-        InvoiceStatus.Canceled => "bg-danger",
+        InvoiceStatus.Pago => "bg-success",
+        InvoiceStatus.Pendente => "bg-warning text-dark",
+        InvoiceStatus.Cancelado => "bg-danger",
         _ => "bg-secondary"
     };
+    private int? enviandoEmailId = null;
+
+    private async Task EnviarEmail(int id)
+    {
+        errorMessage = null;
+        enviandoEmailId = id;
+
+        try
+        {
+            var sucesso = await ApiService.EnviarEmailFaturaAsync(id);
+            if (!sucesso)
+            {
+                errorMessage = "Falha ao enviar o e-mail da fatura.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao enviar e-mail: {ex.Message}";
+        }
+        finally
+        {
+            enviandoEmailId = null;
+        }
+    }
 }

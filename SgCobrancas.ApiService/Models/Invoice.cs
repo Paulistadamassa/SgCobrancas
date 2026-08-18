@@ -2,10 +2,10 @@
 
 public enum InvoiceStatus
 {
-    Pending = 0,
-    Paid = 1,
-    Overdue = 2,
-    Canceled = 3
+    Pendente = 0,
+    Pago = 1,
+    Vencido = 2,
+    Cancelado = 3
 }
 
 public enum RecurrenceType
@@ -26,7 +26,7 @@ public class Invoice
     public Customer? Customer { get; set; }
     public decimal Valor { get; set; }
     public DateTime DataVencimento { get; set; }
-    public InvoiceStatus Status { get; set; } = InvoiceStatus.Pending;
+    public InvoiceStatus Status { get; set; } = InvoiceStatus.Pendente;
     public RecurrenceType Recorrencia { get; set; } = RecurrenceType.Unica;
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
     public DateTime? DataPagamento { get; set; }

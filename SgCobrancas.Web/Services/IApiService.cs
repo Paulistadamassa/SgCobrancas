@@ -17,4 +17,5 @@ public interface IApiService
     Task<InvoiceDTO?> CreateInvoiceAsync(InvoiceDTO invoice);
     Task<InvoiceDTO?> UpdateInvoiceAsync(int? id, InvoiceDTO invoice);
     Task<bool?> DeleteInvoiceAsync(int? id);
+    Task<bool> EnviarEmailFaturaAsync(int id);
 }

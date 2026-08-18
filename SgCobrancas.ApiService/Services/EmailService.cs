@@ -5,13 +5,23 @@ namespace SgCobrancas.ApiService.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly string _smtpoHost = "smtp.gmail.com";
-        private readonly int _smtpPort = 587;
-        private readonly string _emailFrom = "";
-        private readonly string _emailPassword = "";
+        private string _smtpoHost = "";
+        private int _smtpPort = 0;
+        private string _emailFrom = "";
+        private string _emailPassword = "";
+
+        private readonly IConfiguration _configuration;
+        public EmailService(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public async Task<bool> EnviarMensagemAsync(string destinario, string assunto, string corpo)
         {
+            _smtpoHost = _configuration["EmailSettings:SmtpServer"]!;
+            _smtpPort = int.Parse(_configuration["EmailSettings:SmtpPort"]!);
+            _emailFrom = _configuration["EmailSettings:SenderEmail"]!;
+            _emailPassword = _configuration["EmailSettings:Password"]!;
             var mensagem = new MimeMessage();
             mensagem.From.Add(new MailboxAddress("Cobrança", _emailFrom));
             mensagem.To.Add(new MailboxAddress("", destinario));
