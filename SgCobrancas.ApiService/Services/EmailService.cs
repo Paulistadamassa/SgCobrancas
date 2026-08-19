@@ -1,22 +1,20 @@
 ﻿using MimeKit;
 using MailKit.Net.Smtp;
+using SgCobrancas.ApiService.DTOs;
+using SgCobrancas.ApiService.Data;
+using SgCobrancas.ApiService.Migrations;
 
 namespace SgCobrancas.ApiService.Services
 {
     public class EmailService : IEmailService
     {
-        private string _smtpoHost = "";
-        private int _smtpPort = 0;
-        private string _emailFrom = "";
-        private string _emailPassword = "";
-
-        private readonly IConfiguration _configuration;
-        public EmailService(IConfiguration configuration)
+        private readonly AppDbContext _db;
+        public EmailService(AppDbContext db)
         {
-            _configuration = configuration;
+            _db = db;
         }
 
-        public async Task<bool> EnviarMensagemAsync(string destinario, string assunto, string corpo)
+        public async Task<bool> EnviarMensagemAsync(int id, string destinario, string assunto, string corpo)
         {
             _smtpoHost = _configuration["EmailSettings:SmtpServer"]!;
             _smtpPort = int.Parse(_configuration["EmailSettings:SmtpPort"]!);
@@ -35,6 +33,27 @@ namespace SgCobrancas.ApiService.Services
             await client.DisconnectAsync(true);
 
             return true;
+        }
+
+        public async Task<EmailDTO> CreateEmail(EmailDTO email)
+        {
+            if (email == null) return null;
+
+            var emailConfigExists = _db.EmailConfigs.Any(e => e.SmtpServer == email.SmtpServer);
+            if (!emailConfigExists)
+            {
+                var emailConfig = new Models.EmailConfig
+                {
+                    SmtpServer = email.SmtpServer,
+                    SmtpPort = email.SmtpPort,
+                    SenderEmail = email.SenderEmail,
+                    EmailPassword = email.EmailPassword
+                };
+                _db.EmailConfigs.Add(emailConfig);
+                await _db.SaveChangesAsync();
+            }
+
+            return email;
         }
     }
 }

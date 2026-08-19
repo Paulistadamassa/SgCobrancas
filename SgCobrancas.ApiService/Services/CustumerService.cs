@@ -72,7 +72,7 @@ public class CustomerService : ICustomerService
         
         if (string.IsNullOrEmpty(assunto) || string.IsNullOrEmpty(corpo)) { return false; }
 
-        var emailEnviou = await _email.EnviarMensagemAsync(customer.Email, assunto, corpo);
+        var emailEnviou = await _email.EnviarMensagemAsync(1, customer.Email, assunto, corpo);
         if (!emailEnviou) { return false;  }
 
         return true;

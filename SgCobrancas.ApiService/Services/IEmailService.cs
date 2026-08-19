@@ -1,7 +1,10 @@
-﻿namespace SgCobrancas.ApiService.Services
+﻿using SgCobrancas.ApiService.DTOs;
+
+namespace SgCobrancas.ApiService.Services
 {
     public interface IEmailService
     {
-        Task<bool> EnviarMensagemAsync(string destinario, string assunto, string corpo);
+        Task<bool> EnviarMensagemAsync(int id, string destinario, string assunto, string corpo);
+        Task<EmailDTO> CreateEmail(EmailDTO email);
     }
 }

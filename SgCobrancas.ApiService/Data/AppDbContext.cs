@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
+    public DbSet<EmailConfig> EmailConfigs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
