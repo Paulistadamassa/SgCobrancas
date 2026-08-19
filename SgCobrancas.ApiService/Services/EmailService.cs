@@ -1,17 +1,30 @@
 ﻿using MimeKit;
 using MailKit.Net.Smtp;
+using SgCobrancas.ApiService.DTOs;
+using SgCobrancas.ApiService.Data;
+using SgCobrancas.ApiService.Migrations;
 
 namespace SgCobrancas.ApiService.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly string _smtpoHost = "smtp.gmail.com";
-        private readonly int _smtpPort = 587;
-        private readonly string _emailFrom = "";
-        private readonly string _emailPassword = "";
-
-        public async Task<bool> EnviarMensagemAsync(string destinario, string assunto, string corpo)
+        private readonly AppDbContext _db;
+        public EmailService(AppDbContext db)
         {
+            _db = db;
+        }
+
+        public async Task<bool> EnviarMensagemAsync(int id, string destinario, string assunto, string corpo)
+        {
+            if (id == null || id <= 0) return false;
+            var email = _db.EmailConfigs.FirstOrDefault(e => e.Id == id);
+            if (email == null) return false;
+
+            var _smtpoHost = email.SmtpServer;
+            var _smtpPort = email.SmtpPort;
+            var _emailFrom = email.SenderEmail;
+            var _emailPassword = email.EmailPassword;
+
             var mensagem = new MimeMessage();
             mensagem.From.Add(new MailboxAddress("Cobrança", _emailFrom));
             mensagem.To.Add(new MailboxAddress("", destinario));
@@ -25,6 +38,27 @@ namespace SgCobrancas.ApiService.Services
             await client.DisconnectAsync(true);
 
             return true;
+        }
+
+        public async Task<EmailDTO> CreateEmail(EmailDTO email)
+        {
+            if (email == null) return null;
+
+            var emailConfigExists = _db.EmailConfigs.Any(e => e.SmtpServer == email.SmtpServer);
+            if (!emailConfigExists)
+            {
+                var emailConfig = new Models.EmailConfig
+                {
+                    SmtpServer = email.SmtpServer,
+                    SmtpPort = email.SmtpPort,
+                    SenderEmail = email.SenderEmail,
+                    EmailPassword = email.EmailPassword
+                };
+                _db.EmailConfigs.Add(emailConfig);
+                await _db.SaveChangesAsync();
+            }
+
+            return email;
         }
     }
 }
