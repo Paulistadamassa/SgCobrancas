@@ -2,10 +2,10 @@
 
 public enum InvoiceStatus
 {
-    Pending,
-    Paid,
-    Overdue,
-    Canceled
+    Pendente,
+    Pago,
+    Vencido,
+    Cancelado
 }
 
 public enum RecurrenceType

@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using SgCobrancas.ApiService.Data;
 using SgCobrancas.ApiService.Mapper;
 using SgCobrancas.ApiService.Services;
+using SgConversas.API.Handler;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +26,40 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Auth
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Name = "X-API-Key",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Description = "Insira sua API Key aqui"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "ApiKey"
+                            }
+                        },
+                        new string[] { }
+                    }
+                });
+});
+
+// Auth ApiKey
+builder.Services.AddAuthentication("ApiKey")
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthHandler>("ApiKey", null);
+
 
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
@@ -48,6 +84,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowBlazor");
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

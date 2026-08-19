@@ -16,15 +16,10 @@ namespace SgCobrancas.ApiService.Services
 
         public async Task<bool> EnviarMensagemAsync(int id, string destinario, string assunto, string corpo)
         {
-            if (id == null || id <= 0) return false;
-            var email = _db.EmailConfigs.FirstOrDefault(e => e.Id == id);
-            if (email == null) return false;
-
-            var _smtpoHost = email.SmtpServer;
-            var _smtpPort = email.SmtpPort;
-            var _emailFrom = email.SenderEmail;
-            var _emailPassword = email.EmailPassword;
-
+            _smtpoHost = _configuration["EmailSettings:SmtpServer"]!;
+            _smtpPort = int.Parse(_configuration["EmailSettings:SmtpPort"]!);
+            _emailFrom = _configuration["EmailSettings:SenderEmail"]!;
+            _emailPassword = _configuration["EmailSettings:Password"]!;
             var mensagem = new MimeMessage();
             mensagem.From.Add(new MailboxAddress("Cobrança", _emailFrom));
             mensagem.To.Add(new MailboxAddress("", destinario));

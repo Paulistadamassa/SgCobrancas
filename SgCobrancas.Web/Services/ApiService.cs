@@ -48,19 +48,19 @@ public class ApiService : IApiService
 
     public async Task<List<InvoiceDTO>> GetInvoicesAsync()
     {
-        var response = await _http.GetFromJsonAsync<List<InvoiceDTO>>("api/invoice");
+        var response = await _http.GetFromJsonAsync<List<InvoiceDTO>>("api/invoices");
         return response ?? new List<InvoiceDTO>();
     }
 
     public async Task<InvoiceDTO?> GetInvoiceByIdAsync(int? id)
     {
         if (id is null) return null;
-        return await _http.GetFromJsonAsync<InvoiceDTO>($"api/invoice/{id}");
+        return await _http.GetFromJsonAsync<InvoiceDTO>($"api/invoices/{id}");
     }
 
     public async Task<InvoiceDTO?> CreateInvoiceAsync(InvoiceDTO invoice)
     {
-        var response = await _http.PostAsJsonAsync("api/invoice", invoice);
+        var response = await _http.PostAsJsonAsync("api/invoices", invoice);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<InvoiceDTO>();
     }
@@ -68,15 +68,21 @@ public class ApiService : IApiService
     public async Task<InvoiceDTO?> UpdateInvoiceAsync(int? id, InvoiceDTO invoice)
     {
         if (id is null) return null;
-        var response = await _http.PutAsJsonAsync($"api/invoice/{id}", invoice);
+        var response = await _http.PutAsJsonAsync($"api/invoices/{id}", invoice);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<InvoiceDTO>();
+    }
+
+    public async Task<bool> EnviarEmailFaturaAsync(int id)
+    {
+        var response = await _http.PostAsync($"api/invoices/{id}/enviar-email", null);
+        return response.IsSuccessStatusCode;
     }
 
     public async Task<bool?> DeleteInvoiceAsync(int? id)
     {
         if (id is null) return false;
-        var response = await _http.DeleteAsync($"api/invoice/{id}");
+        var response = await _http.DeleteAsync($"api/invoices/{id}");
         return response.IsSuccessStatusCode;
     }
 }

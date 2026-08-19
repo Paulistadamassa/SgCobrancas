@@ -9,10 +9,14 @@ namespace SgCobrancas.ApiService.Controllers;
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
+    private readonly ICustomerService _customerService;
+    private readonly IEmailService _emailService;
 
-    public InvoicesController(IInvoiceService invoiceService)
+    public InvoicesController(IInvoiceService invoiceService, ICustomerService customerService, IEmailService emailService)
     {
         _invoiceService = invoiceService;
+        _customerService = customerService;
+        _emailService = emailService;
     }
 
     [HttpGet]
@@ -65,5 +69,26 @@ public class InvoicesController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpPost("{id}/enviar-email")]
+    public async Task<IActionResult> EnviarEmail(int id)
+    {
+        var invoice = await _invoiceService.GetByIdAsync(id);
+        if (invoice == null)
+            return NotFound("Fatura não encontrada.");
+
+        var customer = await _customerService.GetByIdAsync(invoice.CustomerId);
+        if (customer == null || string.IsNullOrWhiteSpace(customer.Email))
+            return BadRequest("Cliente sem e-mail cadastrado.");
+
+        var assunto = $"Fatura - {invoice.Status} - Vencimento {invoice.DataVencimento:dd/MM/yyyy}";
+        var corpo = $"Olá {customer.Name}, sua fatura no valor de {invoice.Valor:C} vence em {invoice.DataVencimento:dd/MM/yyyy}.";
+
+        var sucesso = await _emailService.EnviarMensagemAsync(customer.Email, assunto, corpo);
+        if (!sucesso)
+            return StatusCode(500, "Falha ao enviar o e-mail.");
+
+        return Ok();
     }
 }
