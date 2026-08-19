@@ -85,7 +85,7 @@ public class InvoicesController : ControllerBase
         var assunto = $"Fatura - {invoice.Status} - Vencimento {invoice.DataVencimento:dd/MM/yyyy}";
         var corpo = $"Olá {customer.Name}, sua fatura no valor de {invoice.Valor:C} vence em {invoice.DataVencimento:dd/MM/yyyy}.";
 
-        var sucesso = await _emailService.EnviarMensagemAsync(customer.Email, assunto, corpo);
+        var sucesso = await _emailService.EnviarMensagemAsync(1,customer.Email, assunto, corpo);
         if (!sucesso)
             return StatusCode(500, "Falha ao enviar o e-mail.");
 
