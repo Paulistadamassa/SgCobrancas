@@ -60,5 +60,35 @@ namespace SgCobrancas.ApiService.Services
 
             return email;
         }
+
+        public async Task<EmailDTO> GetEmailById(int id)
+        {
+            var emailConfig = await _db.EmailConfigs.FindAsync(id);
+            if (emailConfig == null) return null;
+            var emailDTO = new EmailDTO
+            {
+                Id = emailConfig.Id,
+                SmtpServer = emailConfig.SmtpServer,
+                SmtpPort = emailConfig.SmtpPort,
+                SenderEmail = emailConfig.SenderEmail,
+                EmailPassword = emailConfig.EmailPassword
+            };
+            return emailDTO;
+        }
+
+        public async Task<EmailDTO> EditEmail(int id, EmailDTO email)
+        {
+            var emailConfig = await _db.EmailConfigs.FindAsync(id);
+            if (emailConfig == null) return null;
+            if (email == null) return null;
+
+            emailConfig.SmtpServer = email.SmtpServer;
+            emailConfig.SmtpPort = email.SmtpPort;
+            emailConfig.SenderEmail = email.SenderEmail;
+            emailConfig.EmailPassword = email.EmailPassword;
+            await _db.SaveChangesAsync();
+            email.Id = id;
+            return email;
+        }
     }
 }

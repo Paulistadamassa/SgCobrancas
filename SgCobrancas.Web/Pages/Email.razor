@@ -1,0 +1,54 @@
+﻿@page "/email"
+@using SgCobrancas.Web.DTOs
+@using SgCobrancas.Web.Services
+@inject IApiService ApiService
+
+<PageTitle>Email - SgCobranças</PageTitle>
+
+<div class="container mt-4">
+    <h3 class="mb-4">Configuração de E-mail</h3>
+
+    <div class="row">
+        <div class="col-md-12 col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Servidor SMTP</label>
+                        <input type="text" class="form-control" @bind="email.SmtpServer" placeholder="smtp.exemplo.com" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Porta</label>
+                        <input type="number" class="form-control" @bind="email.SmtpPort" placeholder="587" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">E-mail Remetente</label>
+                        <input type="email" class="form-control" @bind="email.SenderEmail" placeholder="seu-email@exemplo.com" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Senha</label>
+                        <input type="password" class="form-control" @bind="email.EmailPassword" placeholder="********" />
+                    </div>
+
+                    <button class="btn btn-primary w-100" @onclick="SaveEmailConfig">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public EmailDTO email = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        email = await ApiService.GetEmailByIdAsync(1) ?? new();
+    }
+
+    private async Task SaveEmailConfig()
+    {
+        await ApiService.EditEmailAsync(1, email);
+    }
+}

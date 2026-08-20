@@ -85,4 +85,18 @@ public class ApiService : IApiService
         var response = await _http.DeleteAsync($"api/invoices/{id}");
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<EmailDTO>? GetEmailByIdAsync(int? id)
+    {
+        if (id is null) return null;
+        return await _http.GetFromJsonAsync<EmailDTO>($"api/Email/{id}");
+    }
+
+    public async Task<EmailDTO?> EditEmailAsync(int? id, EmailDTO email)
+    {
+        if (id is null) return null;
+        var response = await _http.PutAsJsonAsync($"api/Email/{id}", email);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<EmailDTO>();
+    }
 }

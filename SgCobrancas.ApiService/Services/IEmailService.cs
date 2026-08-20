@@ -6,5 +6,7 @@ namespace SgCobrancas.ApiService.Services
     {
         Task<bool> EnviarMensagemAsync(int id, string destinario, string assunto, string corpo);
         Task<EmailDTO> CreateEmail(EmailDTO email);
+        Task<EmailDTO> EditEmail(int id, EmailDTO email);
+        Task<EmailDTO> GetEmailById(int id);
     }
 }

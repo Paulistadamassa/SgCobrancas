@@ -23,5 +23,21 @@ namespace SgCobrancas.ApiService.Controllers
             if (returnEmail == null) { return BadRequest(); }
             return Ok(returnEmail);
         }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetEmailById(int id)
+        {
+            var email = await _emailService.GetEmailById(id);
+            if (email == null) { return NotFound(); }
+            return Ok(email);
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> EditEmail(int id, EmailDTO email)
+        {
+            var returnEmail = await _emailService.EditEmail(id, email);
+            if (returnEmail == null) { return NotFound(); }
+            return Ok(returnEmail);
+        }
     }
 }
